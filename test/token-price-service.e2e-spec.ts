@@ -4,7 +4,7 @@ import { GenericContainer, StartedTestContainer } from 'testcontainers';
 import { Token } from '../src/tokens/entities/token.entity';
 import { Chain } from '../src/tokens/entities/chain.entity';
 import { Logo } from '../src/tokens/entities/logo.entity';
-import { PriceUpdateState } from '../src/tokens/entities/price-update-state.entity';
+import { TokenProcessingState } from '../src/tokens/entities/token-processing-state.entity';
 import { TokenPriceUpdateService } from '../src/tokens/services/token-price-update.service';
 import { MockPriceService } from '../src/tokens/services/mock-price.service';
 import { KafkaProducerService } from '../src/kafka/kafka-producer.service';
@@ -18,7 +18,7 @@ describe('TokenPriceService Integration Tests', () => {
   let tokenRepository: Repository<Token>;
   let chainRepository: Repository<Chain>;
   let logoRepository: Repository<Logo>;
-  let priceUpdateStateRepository: Repository<PriceUpdateState>;
+  let tokenProcessingStateRepository: Repository<TokenProcessingState>;
   let tokenPriceUpdateService: TokenPriceUpdateService;
   let kafkaProducerService: KafkaProducerService;
 
@@ -52,10 +52,10 @@ describe('TokenPriceService Integration Tests', () => {
             username: 'testuser',
             password: 'testpassword',
             database: 'testdb',
-            entities: [Token, Chain, Logo, PriceUpdateState],
+            entities: [Token, Chain, Logo, TokenProcessingState],
             synchronize: true,
           }),
-          TypeOrmModule.forFeature([Token, Chain, Logo, PriceUpdateState]),
+          TypeOrmModule.forFeature([Token, Chain, Logo, TokenProcessingState]),
         ],
         providers: [
           TokenPriceUpdateService,
@@ -82,9 +82,9 @@ describe('TokenPriceService Integration Tests', () => {
       logoRepository = moduleRef.get<Repository<Logo>>(
         getRepositoryToken(Logo),
       );
-      priceUpdateStateRepository = moduleRef.get<Repository<PriceUpdateState>>(
-        getRepositoryToken(PriceUpdateState),
-      );
+      tokenProcessingStateRepository = moduleRef.get<
+        Repository<TokenProcessingState>
+      >(getRepositoryToken(TokenProcessingState));
       tokenPriceUpdateService = moduleRef.get<TokenPriceUpdateService>(
         TokenPriceUpdateService,
       );
@@ -136,9 +136,14 @@ describe('TokenPriceService Integration Tests', () => {
       lastPriceUpdate: new Date(),
     });
 
-    // Create initial price update state
-    await priceUpdateStateRepository.save({
-      lastProcessedId: null,
+    // Create initial token processing state
+    await tokenProcessingStateRepository.save({
+      id: 1,
+      lastProcessedTokenId: null,
+      lastConfirmedTokenId: null,
+      instanceId: null,
+      updatedAt: new Date(),
+      heartbeatAt: new Date(),
     });
 
     // Manually trigger price update (in real app this is done via @Cron)

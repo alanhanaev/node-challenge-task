@@ -8,7 +8,7 @@ import { HealthModule } from './health/health.module';
 import { Token } from './tokens/entities/token.entity';
 import { Chain } from './tokens/entities/chain.entity';
 import { Logo } from './tokens/entities/logo.entity';
-import { PriceUpdateState } from './tokens/entities/price-update-state.entity';
+import { TokenProcessingState } from './tokens/entities/token-processing-state.entity';
 import { TokenSeeder } from './tokens/services/token-seeder.service';
 import appConfig from './config/app.config';
 
@@ -25,7 +25,7 @@ import appConfig from './config/app.config';
       username: appConfig.database.username,
       password: appConfig.database.password,
       database: appConfig.database.database,
-      entities: [Token, Chain, Logo, PriceUpdateState],
+      entities: [Token, Chain, Logo, TokenProcessingState],
       migrations: [__dirname + '/database/migrations/[0-9]*-*.{js,ts}'],
       migrationsRun: true, // Run migrations automatically
       synchronize: false, // Disabled when using migrations
