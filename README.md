@@ -1,18 +1,36 @@
 # Token Price Service Challenge
 
-This repository contains a Node.js challenge task implementing a Token Price Service with intentional anti-patterns and bugs for educational purposes.
+This repository contains a Node.js application implementing a Token Price Service with **modular architecture**, normalized database structure, and Kafka integration.
 
-## Project Structure
+## 📚 Documentation
 
-The repository is organized as follows:
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Подробное описание архитектуры приложения
+- **[MODULE_DIAGRAM.md](./MODULE_DIAGRAM.md)** - Визуальные диаграммы и схемы модулей
+- **[REFACTORING_SUMMARY.md](./REFACTORING_SUMMARY.md)** - Итоги рефакторинга и модуляризации
+- **[CHALLENGE.md](./CHALLENGE.md)** - Техническое задание
+- **[src/README.md](./src/README.md)** - Инструкции по запуску
 
-- **src/**: The main project directory containing:
-  - **data/**: Database context and seeder
-  - **kafka/**: Kafka producer service
-  - **migrations/**: Database migrations
-  - **models/**: Token and message models
-  - **services/**: Price update and mock services
-  - **test/**: Integration tests
+## 🏗️ Модульная структура
+
+Приложение организовано по **гибридному подходу** (домен + инфраструктура):
+
+- **tokens/** - Домен: управление токенами, цепями, логотипами и ценами
+  - `entities/` - TypeORM entities (Token, Chain, Logo)
+  - `services/` - Бизнес-логика (TokenPriceUpdateService, MockPriceService, TokenSeederService)
+  - `schemas/` - Zod validation schemas
+  - `tokens.module.ts` - NestJS модуль
+
+- **kafka/** - Инфраструктура: интеграция с Apache Kafka
+  - `models/` - Kafka message models
+  - `kafka-producer.service.ts` - Отправка сообщений
+  - `kafka.module.ts` - NestJS модуль
+
+- **database/** - База данных
+  - `migrations/` - TypeORM миграции
+  - `data-source.ts` - Конфигурация TypeORM
+  - `seed.ts` - Standalone скрипт для заполнения БД
+
+**test/** (вне src/) - E2E/Integration тесты
 
 ## Technology Stack
 
@@ -25,16 +43,59 @@ The repository is organized as follows:
 - **Jest**: For testing
 - **Testcontainers**: For integration testing with Docker containers
 
-## Getting Started
+## 🚀 Быстрый старт
 
-See the [src/README.md](./src/README.md) for detailed instructions on how to run the application and tests.
+### 1. Запустить зависимости (PostgreSQL, Kafka, Zookeeper)
+```bash
+docker-compose up -d
+```
 
-## Features
+### 2. Установить зависимости
+```bash
+npm install
+```
 
-- Token price updates with a mock price service
-- Kafka integration for price update messages
-- PostgreSQL database with denormalized structure
-- Integration tests using Testcontainers
+### 3. Запустить миграции
+```bash
+npm run migration:run
+```
+
+### 4. Запустить приложение
+```bash
+npm run start:dev
+```
+
+Приложение автоматически:
+- ✅ Запустит миграции (если есть новые)
+- ✅ Создаст начальные данные (3 токена: ETH, BTC, SOL)
+- ✅ Запустит обновление цен каждые 5 секунд
+- ✅ Отправит сообщения в Kafka топик `token-prices`
+
+### Проверка работы
+
+```bash
+# Проверить данные в БД
+docker exec token-price-postgres psql -U postgres -d tokens -c \
+"SELECT t.symbol, t.price, c.name as chain FROM tokens t JOIN chains c ON t.chain_id = c.id;"
+
+# Проверить Kafka топики
+docker exec token-price-kafka kafka-topics --list --bootstrap-server localhost:9092
+```
+
+📖 **Подробные инструкции:** [src/README.md](./src/README.md)
+
+## ✨ Features
+
+- ✅ **Модульная архитектура** - чистое разделение на домен и инфраструктуру
+- ✅ **Нормализованная БД (3NF)** - chains, logos, tokens с foreign keys
+- ✅ **Автоматические миграции** - TypeORM migrations запускаются при старте
+- ✅ **Периодическое обновление цен** - каждые 5 секунд
+- ✅ **Kafka интеграция** - отправка сообщений при изменении цен
+- ✅ **Типобезопасность** - TypeScript + Zod schemas
+- ✅ **Точные цены** - DECIMAL(20,8) в БД, string в Node.js (без потери точности)
+- ✅ **Integration тесты** - Testcontainers для PostgreSQL и Kafka
+- ✅ **Docker Compose** - для локальной разработки
+- ✅ **Graceful shutdown** - корректное завершение всех соединений
 
 ## License
 

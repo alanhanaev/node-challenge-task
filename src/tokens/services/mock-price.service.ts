@@ -1,20 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import { Token } from '../models/token.entity';
+import { Token } from '../entities/token.entity';
 
 @Injectable()
 export class MockPriceService {
-  async getRandomPriceForToken(token: Token): Promise<number> {
-    // Simulate API call delay  
+  async getRandomPriceForToken(token: Token): Promise<string> {
+    // Simulate API call delay
     await new Promise<void>((resolve) => {
       setTimeout(() => {
         resolve();
       }, this.getRandomInt(50, 200));
     });
-    
+
     const basePrice = this.getRandomInt(1, 100000);
     const randomFactor = Math.random() * 10;
-    
-    return basePrice * randomFactor;
+    const price = basePrice * randomFactor;
+
+    // Return price as string with 8 decimal places
+    return price.toFixed(8);
   }
 
   private getRandomInt(min: number, max: number): number {
