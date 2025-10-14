@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TokensModule } from './tokens/tokens.module';
 import { KafkaModule } from './kafka/kafka.module';
+import { HealthModule } from './health/health.module';
 import { Token } from './tokens/entities/token.entity';
 import { Chain } from './tokens/entities/chain.entity';
 import { Logo } from './tokens/entities/logo.entity';
@@ -31,6 +32,7 @@ import appConfig from './config/app.config';
     }),
     TokensModule, // Import tokens module
     KafkaModule, // Import Kafka module
+    HealthModule, // Import health module
   ],
   controllers: [],
   providers: [],

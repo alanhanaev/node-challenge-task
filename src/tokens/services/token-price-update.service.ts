@@ -63,10 +63,8 @@ export class TokenPriceUpdateService {
 
       this.logger.log(`Processing batch: ${tokens.length} tokens`);
 
-      // Process tokens
-      for (const token of tokens) {
-        await this.updateTokenPrice(token);
-      }
+      // Process tokens in batch
+      await this.updateTokensBatch(tokens);
 
       // Update state
       const lastToken = tokens[tokens.length - 1];
@@ -84,34 +82,72 @@ export class TokenPriceUpdateService {
     }
   }
 
-  private async updateTokenPrice(token: Token): Promise<void> {
+  private async updateTokensBatch(tokens: Token[]): Promise<void> {
     try {
-      const oldPrice = token.price;
-      const newPrice = await this.priceService.getRandomPriceForToken(token);
+      // Получить новые цены для всех токенов параллельно
+      const pricePromises = tokens.map(token => 
+        this.priceService.getRandomPriceForToken(token)
+      );
+      const newPrices = await Promise.all(pricePromises);
 
-      if (oldPrice !== newPrice) {
-        // Create message for Kafka using Zod helper function
-        const message = createTokenPriceUpdateMessage({
-          tokenId: token.id,
-          symbol: token.symbol || 'UNKNOWN',
-          oldPrice,
-          newPrice,
-          // timestamp will be set to current date by default if not provided
-        });
-        await this.kafkaProducer.sendPriceUpdateMessage(message);
+      // Найти токены с изменившимися ценами
+      const tokensToUpdate: Token[] = [];
+      const kafkaMessages: any[] = [];
+      const priceChanges: Array<{token: Token, oldPrice: string, newPrice: string}> = [];
 
-        // Update token in database
-        token.price = newPrice;
-        token.lastPriceUpdate = new Date();
-        await this.tokenRepository.save(token);
+      for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        const oldPrice = token.price;
+        const newPrice = newPrices[i];
+
+        if (oldPrice !== newPrice) {
+          // Сохранить информацию об изменении для логирования
+          priceChanges.push({ token, oldPrice, newPrice });
+
+          // Подготовить сообщение для Kafka
+          const message = createTokenPriceUpdateMessage({
+            tokenId: token.id,
+            symbol: token.symbol || 'UNKNOWN',
+            oldPrice,
+            newPrice,
+          });
+          kafkaMessages.push(message);
+
+          // Обновить токен
+          token.price = newPrice;
+          token.lastPriceUpdate = new Date();
+          tokensToUpdate.push(token);
+        }
+      }
+
+      if (tokensToUpdate.length === 0) {
+        this.logger.log('No price changes detected in this batch');
+        return;
+      }
+
+      // Отправить все сообщения в Kafka параллельно
+      const kafkaPromises = kafkaMessages.map(message => 
+        this.kafkaProducer.sendPriceUpdateMessage(message)
+      );
+      await Promise.all(kafkaPromises);
+
+      // Сохранить все изменения в базе данных одним запросом
+      await this.tokenRepository.save(tokensToUpdate);
+
+      this.logger.log(
+        `Batch update completed: ${tokensToUpdate.length}/${tokens.length} tokens updated`
+      );
+
+      // Логировать детали изменений
+      for (const change of priceChanges) {
         this.logger.log(
-          `Updated price for ${token.symbol}: ${oldPrice} -> ${newPrice}`,
+          `Updated price for ${change.token.symbol}: ${change.oldPrice} -> ${change.newPrice}`
         );
       }
+
     } catch (error) {
-      this.logger.error(
-        `Error updating price for token ${token.id}: ${error.message}`,
-      );
+      this.logger.error(`Error updating token batch: ${error.message}`);
+      throw error;
     }
   }
 
