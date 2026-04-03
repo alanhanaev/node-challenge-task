@@ -17,11 +17,11 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "typeorm": "typeorm-ts-node-commonjs",
-    "migration:generate": "npm run typeorm -- migration:generate -d src/data/data-source.ts",
+    "migration:generate": "npm run typeorm -- migration:generate -d src/database/data-source.ts",
     "migration:create": "npm run typeorm -- migration:create",
-    "migration:run": "ts-node -r tsconfig-paths/register src/migrations/run-migrations.ts",
-    "migration:revert": "npm run typeorm -- migration:revert -d src/data/data-source.ts",
-    "db:seed": "ts-node -r tsconfig-paths/register src/data/seed.ts"
+    "migration:run": "ts-node -r tsconfig-paths/register src/database/migrations/run-migrations.ts",
+    "migration:revert": "npm run typeorm -- migration:revert -d src/database/data-source.ts",
+    "db:seed": "ts-node -r tsconfig-paths/register src/database/seed.ts"
   },
   "keywords": [
     "nestjs",
@@ -37,6 +37,7 @@
     "@nestjs/config": "^3.0.0",
     "@nestjs/core": "^10.0.0",
     "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/schedule": "^6.0.1",
     "@nestjs/typeorm": "^10.0.0",
     "kafkajs": "^2.2.4",
     "pg": "^8.11.0",
